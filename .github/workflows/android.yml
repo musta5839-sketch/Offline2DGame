@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -44,11 +44,25 @@ jobs:
       - name: Build APK
         run: ./gradlew --no-daemon clean assembleDebug --stacktrace
 
-      - name: Verify APK
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Check APK exists
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Test APK archive
+        run: |
           unzip -t app/build/outputs/apk/debug/app-debug.apk
-          apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Verify APK signature
+        run: |
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Generate SHA-256
+        run: |
           sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
+          cat app/build/outputs/apk/debug/app-debug.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
